@@ -87,7 +87,12 @@ SegmentTubesUsingMinimalPathFilter< Dimension, TInputPixel >
     offsetVector[k] = origin[k];
     tubeSpacing[k] = spacing[k];
     }
-  // Create path information
+  // Create path filter & path information
+  typename PathFilterType::Pointer pathFilter = PathFilterType::New();
+  pathFilter->SetInput( m_SpeedImage );
+  pathFilter->SetCostFunction( costFunction );
+  pathFilter->SetTerminationValue( m_OptimizerTerminationValue );
+
   typedef itk::SpeedFunctionPathInformation< PointType > PathInformationType;
   typename PathInformationType::Pointer pathInfo = PathInformationType::New();
   pathInfo->SetStartPoint( m_StartPoint );
@@ -95,22 +100,93 @@ SegmentTubesUsingMinimalPathFilter< Dimension, TInputPixel >
     {
     pathInfo->AddWayPoint( m_IntermediatePoints[i] );
     }
+  double radiusAtMin = 0.0;
   if( m_TargetTubeGroup )
     {
-    PointType pointPath;
-    this->IsPointTooNear( m_TargetTubeGroup, m_StartPoint, pointPath );
-    pathInfo->SetEndPoint( pointPath );
+      // Find point on target tube w/ earliest arrival and use that as end point
+      typedef FastMarchingUpwindGradientImageFilter< InputImageType, InputImageType >
+              FastMarchingType;
+
+      typedef typename FastMarchingType::NodeContainer NodeContainer;
+      typedef typename FastMarchingType::NodeType NodeType;
+      typename FastMarchingType::Pointer marching = FastMarchingType::New();
+      marching->SetInput(m_SpeedImage);
+      marching->SetGenerateGradientImage(false);
+      marching->SetTargetOffset(2.0 * m_OptimizerTerminationValue);
+      marching->SetTargetReachedModeToAllTargets();
+
+      // Use closest point in Euclidean sense as initial guess
+      PointType pointPath;
+      this->IsPointTooNear( m_TargetTubeGroup, m_StartPoint, pointPath );
+
+      typename PathInformationType::Pointer tempPath = PathInformationType::New();
+      tempPath->SetStartPoint(m_StartPoint);
+      tempPath->SetEndPoint( pointPath );
+
+      typename InputImageType::IndexType indexTargetPrevious, indexTargetNext;
+      m_SpeedImage->TransformPhysicalPointToIndex(
+                      tempPath->PeekPreviousFront(),indexTargetPrevious);
+      m_SpeedImage->TransformPhysicalPointToIndex(
+                      tempPath->PeekNextFront(), indexTargetNext);
+
+      NodeType nodeTargetPrevious;
+      NodeType nodeTargetNext;
+      nodeTargetPrevious.SetValue(0.0);
+      nodeTargetNext.SetValue(0.0);
+      nodeTargetPrevious.SetIndex(indexTargetPrevious);
+      nodeTargetNext.SetIndex(indexTargetNext);
+      typename NodeContainer::Pointer targets = NodeContainer::New();
+      targets->Initialize();
+      targets->InsertElement(0, nodeTargetPrevious);
+      targets->InsertElement(1, nodeTargetNext);
+      marching->SetTargetPoints(targets);
+
+      typename InputImageType::IndexType indexTrial;
+      m_SpeedImage->TransformPhysicalPointToIndex(tempPath->GetCurrentFrontAndAdvance(), indexTrial);
+      NodeType nodeTrial;
+      nodeTrial.SetValue(0.0);
+      nodeTrial.SetIndex(indexTrial);
+      typename NodeContainer::Pointer trial = NodeContainer::New();
+      trial->Initialize();
+      trial->InsertElement(0, nodeTrial);
+      marching->SetTrialPoints(trial);
+
+      marching->UpdateLargestPossibleRegion();
+      typename InputImageType::Pointer arrival = marching->GetOutput();
+
+      typename InputSpatialObjectType::ChildrenListPointer tubeList = m_TargetTubeGroup->GetChildren();
+      typename TubeType::Pointer curTube = dynamic_cast< TubeType* >(tubeList->begin()->GetPointer());
+      typename TubeType::PointListType pointList = curTube->GetPoints();
+      curTube->ComputeObjectToWorldTransform();
+
+      double minDist = itk::NumericTraits<double>::max();
+      int minInd = -1;
+      for (int i = 0; i < pointList.size(); i++)
+      {
+          typename InputImageType::IndexType ind;
+          ind[0] = pointList[i].GetPosition()[0];
+          ind[1] = pointList[i].GetPosition()[1];
+          ind[2] = pointList[i].GetPosition()[2];
+
+          double d = arrival->GetPixel( ind );
+          if (d < minDist)
+          {
+              minDist = d;
+              minInd = i;
+              radiusAtMin =  pointList[i].GetRadius();
+          }
+      }
+
+      pathInfo->SetEndPoint(
+                curTube->GetIndexToWorldTransform()->
+                TransformPoint(pointList[minInd].GetPosition())
+                );
     }
   else
     {
     pathInfo->SetEndPoint( m_EndPoint );
     }
 
-  // Create path filter
-  typename PathFilterType::Pointer pathFilter = PathFilterType::New();
-  pathFilter->SetInput( m_SpeedImage );
-  pathFilter->SetCostFunction( costFunction );
-  pathFilter->SetTerminationValue( m_OptimizerTerminationValue );
   pathFilter->AddPathInformation( pathInfo );
 
   // Set Optimizer
@@ -217,10 +293,9 @@ SegmentTubesUsingMinimalPathFilter< Dimension, TInputPixel >
         }
       if( m_ConnectToTargetTubeSurface )
         {
-        PointType nearPoint;
-        bool isNear = this->IsPointTooNear
-          ( m_TargetTubeGroup, pathPoint, nearPoint );
-        if( isNear )
+        PointType targetPoint = pathInfo->GetEndPoint();
+        double dist = targetPoint.SquaredEuclideanDistanceTo(pathPoint);
+        if( dist < radiusAtMin*radiusAtMin )
           {
           continue;
           }
