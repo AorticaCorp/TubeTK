@@ -182,10 +182,11 @@ SegmentTubesUsingMinimalPathFilter< Dimension, TInputPixel >
                 TransformPoint(pointList[minInd].GetPosition())
                 );
     }
-  else
+  else 
     {
     pathInfo->SetEndPoint( m_EndPoint );
     }
+ 
 
   pathFilter->AddPathInformation( pathInfo );
 
@@ -279,7 +280,9 @@ SegmentTubesUsingMinimalPathFilter< Dimension, TInputPixel >
     // Output centerline in TRE file
     typename TubeType::PointListType tubePointList;
     typename PathType::VertexListType * vertexList = path->GetVertexList();
-    for( unsigned int k = 0; k < vertexList->Size(); k++ )
+	unsigned int k, ctr=0;
+
+    for( k = 0; k < vertexList->Size(); k++ )
       {
       PointType pathPoint;
       m_SpeedImage->TransformContinuousIndexToPhysicalPoint(
@@ -292,19 +295,38 @@ SegmentTubesUsingMinimalPathFilter< Dimension, TInputPixel >
           m_SpeedImage->GetPixel( imageIndex );
         }
       if( m_ConnectToTargetTubeSurface )
-        {
-        PointType targetPoint = pathInfo->GetEndPoint();
+        {	  
+		typename InputSpatialObjectType::ChildrenListPointer tubeList = m_TargetTubeGroup->GetChildren();
+		typename TubeType::Pointer curTube = dynamic_cast< TubeType* >(tubeList->begin()->GetPointer());
+		typename TubeType::PointListType pointList = curTube->GetPoints();
+		curTube->ComputeObjectToWorldTransform();
+
+        /*PointType targetPoint = pathInfo->GetEndPoint();
+		
         double dist = targetPoint.SquaredEuclideanDistanceTo(pathPoint);
         if( dist < radiusAtMin*radiusAtMin )
           {
           continue;
-          }
-        }
-      TubePointType tubePoint;
-      tubePoint.SetPosition( vertexList->GetElement( k ) );
-      tubePoint.SetID( k );
-      tubePointList.push_back( tubePoint );
+          }*/
+
+		if (!curTube->IsInside(pathPoint))
+		  {
+		  TubePointType tubePoint;
+	      tubePoint.SetPosition(vertexList->GetElement(k));
+		  tubePoint.SetID(ctr);
+		  tubePointList.push_back(tubePoint);
+		  ctr++;
+		  }
+        } // target tube exists (therefore output centerline has to be clipped with target tube)
+	  else
+	    {
+		TubePointType tubePoint;
+		tubePoint.SetPosition(vertexList->GetElement(k));
+		tubePoint.SetID(k);
+		tubePointList.push_back(tubePoint);
+	    } // target tube does not exist
       }
+
     typename TubeType::Pointer pTube = TubeType::New();
     pTube->SetPoints( tubePointList );
     pTube->ComputeTangentAndNormals();
