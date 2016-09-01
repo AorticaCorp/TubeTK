@@ -556,12 +556,6 @@ void vtkMRMLSpatialObjectsNode::UpdatePolyDataFromSpatialObject( void )
 
     currTube->ComputeObjectToWorldTransform();
 
-    double spacingX = currTube->GetSpacing()[0];
-    if( spacingX == 0 )
-      {
-      spacingX = 1;
-      }
-
     // compute root tube ID
     VesselTubeType* curRootTube = currTube;
 
@@ -628,7 +622,7 @@ void vtkMRMLSpatialObjectsNode::UpdatePolyDataFromSpatialObject( void )
         tubePoint->GetAlpha() );
 
       // Radius
-      tubeRadius->SetTuple1(pointID, tubePoint->GetRadius() * spacingX );
+      tubeRadius->SetTuple1(pointID, tubePoint->GetRadius());
 
       // Tangeantes
       tan1->SetTuple3(pointID,
