@@ -141,21 +141,21 @@ int DoIt( int argc, char * argv[] )
   timeCollector.Start( "Set parameters" );
 
   PointType startPathPoint;
-  if( StartPoint.size() == 1 )
-    {
-    for( unsigned int i = 0; i < DimensionT; i++ )
-      {
-      startPathPoint[i]=StartPoint[0][i];
-      }
-   filter->SetStartPoint( startPathPoint );
-    }
+  if (StartPoint.size() == 1)
+  {
+	  for (unsigned int i = 0; i < DimensionT; i++)
+	  {
+		  startPathPoint[i] = StartPoint[0][i];
+	  }
+	  filter->SetStartPoint(startPathPoint);
+  }
   else
-    {
-    tubeErrorMacro(
-      << "Error: Path must contain at only one Start Point" );
-    timeCollector.Stop( "Set parameters" );
-    return EXIT_FAILURE;
-    }
+  {
+	  tubeErrorMacro(
+		  << "Error: Path must contain at only one Start Point");
+	  timeCollector.Stop("Set parameters");
+	  return EXIT_FAILURE;
+  }
 
   if( IntermediatePoints.size() >= 1 )
     {
