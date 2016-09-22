@@ -55,6 +55,16 @@
       <description>Starting from the source point, a new tube is extracted to grow and meet the target tube. </description>
     </file>
     <string-enumeration>
+      <name>bendInBranchVessel</name>
+      <label>Does branch vessel bend</label>
+      <description>Chose an option if branch vessel bends up, down or there is no bend</description>
+      <longflag>bendInBranchVesselOption</longflag>
+      <default>No Bend</default>
+      <element>Bend Upwards</element>
+      <element>Bend Downwards</element>
+      <element>No Bend</element>
+    </string-enumeration>
+    <string-enumeration>
       <name>ConnectionOption</name>
       <label>Connection Option</label>
       <description>Connection Option</description>

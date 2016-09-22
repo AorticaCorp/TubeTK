@@ -78,6 +78,12 @@ public:
   itkGetMacro( EndPoint, PointType );
   itkSetMacro( ConnectToTargetTubeSurface, bool );
   itkGetMacro( ConnectToTargetTubeSurface, bool );
+  itkSetMacro( NoBend, bool );
+  itkGetMacro( NoBend, bool );
+  itkSetMacro( BendUpwards, bool );
+  itkGetMacro( BendUpwards, bool );
+  itkSetMacro( BendDownwards, bool );
+  itkGetMacro( BendDownwards, bool );
   itkSetMacro( OptimizationMethod, std::string );
   itkGetMacro( OptimizationMethod, std::string );
   itkSetMacro( OptimizerTerminationValue, double );
@@ -122,6 +128,9 @@ private:
   std::vector< PointType >          m_IntermediatePoints;
   TubeGroupPointer                  m_TargetTubeGroup;
   bool                              m_ConnectToTargetTubeSurface;
+  bool                              m_NoBend;
+  bool                              m_BendUpwards;
+  bool                              m_BendDownwards;
   std::string                       m_OptimizationMethod;
   double                            m_OptimizerTerminationValue;
   int                               m_OptimizerNumberOfIterations;

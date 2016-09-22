@@ -40,6 +40,9 @@ namespace itk
 			m_RadiusImage = NULL;
 			m_TargetTubeGroup = NULL;
 			m_ConnectToTargetTubeSurface = false;
+			m_NoBend = true;
+			m_BendUpwards = false;
+			m_BendDownwards = true;
 			m_OptimizationMethod = "Regular_Step_Gradient_Descent";
 			m_OptimizerTerminationValue = 2.0;
 			m_OptimizerNumberOfIterations = 2000;
@@ -96,6 +99,10 @@ namespace itk
 				pathInfo->AddWayPoint(m_IntermediatePoints[i]);
 			}
 			double radiusAtMin = 0.0;
+			if (m_EndPoint)
+			{
+				pathInfo->SetEndPoint(m_EndPoint);
+			}
 			if (m_TargetTubeGroup)
 			{
 				// Find point on target tube w/ earliest arrival and use that as end point
@@ -171,11 +178,6 @@ namespace itk
 
 				pathInfo->SetEndPoint(curTube->GetIndexToWorldTransform()->TransformPoint(pointList[minInd].GetPosition()));
 			}
-			else
-			{
-				pathInfo->SetEndPoint(m_EndPoint);
-			}
-
 
 			pathFilter->AddPathInformation(pathInfo);
 
