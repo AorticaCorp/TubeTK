@@ -40,9 +40,9 @@ namespace itk
 			m_RadiusImage = NULL;
 			m_TargetTubeGroup = NULL;
 			m_ConnectToTargetTubeSurface = false;
-			m_NoBend = true;
+			m_NoBend = false;
 			m_BendUpwards = false;
-			m_BendDownwards = true;
+			m_BendDownwards = false;
 			m_OptimizationMethod = "Regular_Step_Gradient_Descent";
 			m_OptimizerTerminationValue = 2.0;
 			m_OptimizerNumberOfIterations = 2000;
@@ -99,12 +99,21 @@ namespace itk
 				pathInfo->AddWayPoint(m_IntermediatePoints[i]);
 			}
 			double radiusAtMin = 0.0;
-			if (m_EndPoint)
+
+			// if user provides an end point for centerline
+			if (m_EndPoint.Size())
 			{
 				pathInfo->SetEndPoint(m_EndPoint);
-			}
-			if (m_TargetTubeGroup)
+			} //end check - if user provides an end point for centerline
+
+			// if user does not provide an end point but instead provides a target tube and says there is no bend in vessel
+			// in this case use the smart closest point search that @vicory implemented
+			// (smart closest point search - user does not provide an end point for centerline and does not say there is a bend in vessel.
+			//  so centerline has to find an end point that is inside the target tube in a direction as straight as possible. this is the search that @vicory implemented)
+			if (m_TargetTubeGroup && m_NoBend)
 			{
+				std::cout << "no bend in vessel but i see a target tube therefore have to clip" << std::endl;
+
 				// Find point on target tube w/ earliest arrival and use that as end point
 				typedef FastMarchingUpwindGradientImageFilter< InputImageType, InputImageType > FastMarchingType;
 
@@ -177,7 +186,38 @@ namespace itk
 				}
 
 				pathInfo->SetEndPoint(curTube->GetIndexToWorldTransform()->TransformPoint(pointList[minInd].GetPosition()));
-			}
+			} //end check - if user does not provide an end point but instead provides a target tube and says there is no bend in vessel
+
+			// if user does not provide an end point but provides a target tube and says that the branch vessel bends upwards
+			// in this case set the end point for the vessel's centerkine to the top  of the target tube
+			if (m_TargetTubeGroup && m_BendUpwards)
+			{
+				std::cout << "bend upwards. therefore end point for centerline is top pt of target tube and i see a target tube therefore have to clip" << std::endl;
+				typename InputSpatialObjectType::ChildrenListPointer tubeList = m_TargetTubeGroup->GetChildren();
+				typename TubeType::Pointer curTube = dynamic_cast<TubeType*>(tubeList->begin()->GetPointer());
+				typename TubeType::PointListType pointList = curTube->GetPoints();
+				curTube->ComputeObjectToWorldTransform();
+
+				pathInfo->SetEndPoint(curTube->GetIndexToWorldTransform()->TransformPoint(pointList[pointList.size() - 1].GetPosition()));
+
+				PointType tmpPt = curTube->GetIndexToWorldTransform()->TransformPoint(pointList[pointList.size() - 1].GetPosition());
+				std::cout << tmpPt[0] << " " << tmpPt[1] << " " << tmpPt[2] << std::endl;
+			} // end check - if user does not provide an end point but provides a target tube and says that the branch vessel bends upward
+
+			if (m_TargetTubeGroup && m_BendDownwards)
+			{
+				std::cout << "bend downwards. therefore end point for centerline is bottom pt of target tube and i see a target tube therefore have to clip" << std::endl;
+				typename InputSpatialObjectType::ChildrenListPointer tubeList = m_TargetTubeGroup->GetChildren();
+				typename TubeType::Pointer curTube = dynamic_cast<TubeType*>(tubeList->begin()->GetPointer());
+				typename TubeType::PointListType pointList = curTube->GetPoints();
+				curTube->ComputeObjectToWorldTransform();
+
+				pathInfo->SetEndPoint(curTube->GetIndexToWorldTransform()->TransformPoint(pointList[0].GetPosition()));
+
+				PointType tmpPt = curTube->GetIndexToWorldTransform()->TransformPoint(pointList[0].GetPosition());
+				std::cout << tmpPt[0] << " " << tmpPt[1] << " " << tmpPt[2] << std::endl;
+
+			} // end check - if user does not provide an end point but provides a target tube and says that the branch vessel bends upward
 
 			pathFilter->AddPathInformation(pathInfo);
 

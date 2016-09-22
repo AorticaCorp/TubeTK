@@ -180,23 +180,28 @@ int DoIt(int argc, char * argv[])
 		}
 		SegmentTubesFilter->SetEndPoint(targetPathPoint);
 	}
-	else if (TargetTubeFileName.empty() && EndPoint.size() == 0)
+	else if (TargetTubeFileName.empty() && EndPoint.size() == 0 )
 	{
-		tubeErrorMacro(
-			<< "Error: Atmost one End/Target Point or Target"
-			"Tube should be provided. ");
+		tubeErrorMacro(<< "Error: Atmost one End/Target Point or Target Tube should be provided. ");
 		timeCollector.Stop("Set parameters");
 		return EXIT_FAILURE;
 	}
 
 	// set which direction vessel bends
-	if (std::strcmp(bendInBranchVessel.c_str(), "No Bend"))
+	if (!std::strcmp(bendInBranchVessel.c_str(), "NoBend"))
 	{
 		SegmentTubesFilter->SetNoBend(true);
 	}
 
-	SegmentTubesFilter->SetBendUpwards(true);
+	if (!std::strcmp(bendInBranchVessel.c_str(), "BendUpwards"))
+	{
+		SegmentTubesFilter->SetBendUpwards(true);
+	}
 
+	if (!std::strcmp(bendInBranchVessel.c_str(), "BendDownwards"))
+	{
+		SegmentTubesFilter->SetBendDownwards(true);
+	}
 
 	SegmentTubesFilter->SetOptimizationMethod(Optimizer);
 	SegmentTubesFilter->SetOptimizerTerminationValue(TerminationValue);

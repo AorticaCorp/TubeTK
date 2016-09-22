@@ -59,10 +59,10 @@
       <label>Does branch vessel bend</label>
       <description>Chose an option if branch vessel bends up, down or there is no bend</description>
       <longflag>bendInBranchVesselOption</longflag>
-      <default>No Bend</default>
-      <element>Bend Upwards</element>
-      <element>Bend Downwards</element>
-      <element>No Bend</element>
+      <default>NoBend</default>
+      <element>BendUpwards</element>
+      <element>BendDownwards</element>
+      <element>NoBend</element>
     </string-enumeration>
     <string-enumeration>
       <name>ConnectionOption</name>
