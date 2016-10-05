@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<executable>
+  <category>TubeTK</category>
+  <title>ClipTubes</title>
+  <description>Return a set of tubes contained in a bounding box</description>
+  <version>1.0</version>
+  <documentation-url>http://public.kitware.com/Wiki/TubeTK</documentation-url>
+  <license>Apache 2.0</license>
+  <contributor>Lucas Gandel (Kitware)</contributor>
+  <acknowledgements>This work is part of the TubeTK project at Kitware.</acknowledgements>
+  <parameters>
+    <label>IO</label>
+    <description>Input/output parameters.</description>
+    <file>
+      <name>sourceTREFile</name>
+      <label>Source TRE File</label>
+      <channel>input</channel>
+      <index>0</index>
+      <description>TRE file that is used as base for clipping</description>
+    </file>
+	 <file>
+      <name>clipMeTREFile</name>
+      <label>TRE that needs to be clipped</label>
+      <channel>input</channel>
+      <index>0</index>
+      <description>TRE file that will be clipped</description>
+    </file>
+    <file>
+      <name>outputTREFile</name>
+      <label>Output TRE File</label>
+      <channel>input</channel>
+      <index>1</index>
+      <description>Output TRE file containing tubes going through the Box</description>
+    </file>
+  </parameters>
+</executable>

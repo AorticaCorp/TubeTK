@@ -11,7 +11,7 @@
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 
-=========================================================================*/
+   =========================================================================*/
 
 #include "tubeCLIProgressReporter.h"
 #include "tubeMessage.h"
@@ -36,219 +36,232 @@
 #include "SegmentTubeUsingMinimalPathCLP.h"
 
 template< class TPixel, unsigned int DimensionT >
-int DoIt( int argc, char * argv[] );
+int DoIt(int argc, char * argv[]);
 
 // Must follow include of "...CLP.h"
 //   and forward declaration of int DoIt( ... ).
 #include "tubeCLIHelperFunctions.h"
 
 template< class TPixel, unsigned int DimensionT >
-int DoIt( int argc, char * argv[] )
+int DoIt(int argc, char * argv[])
 {
-  PARSE_ARGS;
-  // The timeCollector is used to perform basic profiling of the components
-  //   of your algorithm.
-  itk::TimeProbesCollectorBase timeCollector;
+	PARSE_ARGS;
+	// The timeCollector is used to perform basic profiling of the components
+	//   of your algorithm.
+	itk::TimeProbesCollectorBase timeCollector;
 
-  // CLIProgressReporter is used to communicate progress with the Slicer GUI
-  tube::CLIProgressReporter progressReporter( "Extract Minimal Path",
-    CLPProcessInformation );
-  progressReporter.Start();
+	// CLIProgressReporter is used to communicate progress with the Slicer GUI
+	tube::CLIProgressReporter progressReporter("Extract Minimal Path",
+		CLPProcessInformation);
+	progressReporter.Start();
 
-  typedef TPixel                                           PixelType;
-  typedef itk::Image< PixelType, DimensionT >              ImageType;
-  typedef itk::ImageFileReader< ImageType >                ReaderType;
-  typedef itk::SpatialObjectReader< DimensionT >           TubesReaderType;
-  typedef itk::GroupSpatialObject< DimensionT >            TubeGroupType;
-  typedef itk::Point< double, DimensionT >                 PointType;
+	typedef TPixel                                           PixelType;
+	typedef itk::Image< PixelType, DimensionT >              ImageType;
+	typedef itk::ImageFileReader< ImageType >                ReaderType;
+	typedef itk::SpatialObjectReader< DimensionT >           TubesReaderType;
+	typedef itk::GroupSpatialObject< DimensionT >            TubeGroupType;
+	typedef itk::Point< double, DimensionT >                 PointType;
 
-  timeCollector.Start( "Load data" );
+	timeCollector.Start("Load data");
 
-  typedef tube::SegmentTubesUsingMinimalPath< DimensionT, PixelType >
-                                                         FilterType;
-  typename FilterType::Pointer filter = FilterType::New();
+	typedef tube::SegmentTubesUsingMinimalPath< DimensionT, PixelType > SegmentTubesFilterType;
+	typename SegmentTubesFilterType::Pointer SegmentTubesFilter = SegmentTubesFilterType::New();
 
-  //Read input Image
-  typename ReaderType::Pointer reader = ReaderType::New();
-  reader->SetFileName( InputImage.c_str() );
-  try
-    {
-    reader->Update();
-    }
-  catch( itk::ExceptionObject & err )
-    {
-    std::stringstream out;
-    out << "ExceptionObject caught !" << std::endl;
-    out << err << std::endl;
-    tube::ErrorMessage( out.str() );
-    timeCollector.Stop( "Load data" );
-    return EXIT_FAILURE;
-    }
+	//Read input Image
+	typename ReaderType::Pointer reader = ReaderType::New();
+	reader->SetFileName(InputImage.c_str());
+	try
+	{
+		reader->Update();
+	}
+	catch (itk::ExceptionObject & err)
+	{
+		std::stringstream out;
+		out << "ExceptionObject caught !" << std::endl;
+		out << err << std::endl;
+		tube::ErrorMessage(out.str());
+		timeCollector.Stop("Load data");
+		return EXIT_FAILURE;
+	}
 
-  typename ImageType::Pointer speed = reader->GetOutput();
-  speed->DisconnectPipeline();
-  filter->SetSpeedImage( speed );
+	typename ImageType::Pointer speed = reader->GetOutput();
+	speed->DisconnectPipeline();
+	SegmentTubesFilter->SetSpeedImage(speed);
 
-  //Read radius extraction Image
-  if( !RadiusImage.empty() )
-    {
-    reader->SetFileName( RadiusImage.c_str() );
-    try
-      {
-      reader->Update();
-      filter->SetRadiusImage( reader->GetOutput() );
-      filter->SetStartRadius( StartRadius );
-      filter->SetMaxRadius( MaxRadius );
-      filter->SetStepSizeForRadiusEstimation( StepRadius );
-      }
-    catch( itk::ExceptionObject & err )
-      {
-      std::stringstream out;
-      out << "ExceptionObject caught !" << std::endl;
-      out << err << std::endl;
-      tube::ErrorMessage( out.str() );
-      timeCollector.Stop( "Load data" );
-      return EXIT_FAILURE;
-      }
-    }
+	//Read radius extraction Image
+	if (!RadiusImage.empty())
+	{
+		reader->SetFileName(RadiusImage.c_str());
+		try
+		{
+			reader->Update();
+			SegmentTubesFilter->SetRadiusImage(reader->GetOutput());
+			SegmentTubesFilter->SetStartRadius(StartRadius);
+			SegmentTubesFilter->SetMaxRadius(MaxRadius);
+			SegmentTubesFilter->SetStepSizeForRadiusEstimation(StepRadius);
+		}
+		catch (itk::ExceptionObject & err)
+		{
+			std::stringstream out;
+			out << "ExceptionObject caught !" << std::endl;
+			out << err << std::endl;
+			tube::ErrorMessage(out.str());
+			timeCollector.Stop("Load data");
+			return EXIT_FAILURE;
+		}
+	}
 
-  //Read target tube
-  typename TubesReaderType::Pointer tubeFileReader = TubesReaderType::New();
-  if( !TargetTubeFileName.empty() )
-    {
-    try
-      {
-      tubeFileReader->SetFileName( TargetTubeFileName.c_str() );
-      tubeFileReader->Update();
-      filter->SetTargetTubeGroup( tubeFileReader->GetGroup() );
-      if( ConnectionOption == "Connect_To_Target_Tube_Surface" )
-        {
-        filter->SetConnectToTargetTubeSurface( true );
-        }
-      }
-    catch( itk::ExceptionObject & err )
-      {
-      tube::ErrorMessage( "Error loading TRE File: "
-        + std::string( err.GetDescription() ) );
-      timeCollector.Report();
-      return EXIT_FAILURE;
-      }
-    }
+	//Read target tube
+	typename TubesReaderType::Pointer tubeFileReader = TubesReaderType::New();
+	if (!TargetTubeFileName.empty())
+	{
+		try
+		{
+			tubeFileReader->SetFileName(TargetTubeFileName.c_str());
+			tubeFileReader->Update();
+			SegmentTubesFilter->SetTargetTubeGroup(tubeFileReader->GetGroup());
+			if (ConnectionOption == "Connect_To_Target_Tube_Surface")
+			{
+				SegmentTubesFilter->SetConnectToTargetTubeSurface(true);
+			}
+		}
+		catch (itk::ExceptionObject & err)
+		{
+			tube::ErrorMessage("Error loading TRE File: "
+				+ std::string(err.GetDescription()));
+			timeCollector.Report();
+			return EXIT_FAILURE;
+		}
+	}
 
-  timeCollector.Stop( "Load data" );
-  progressReporter.Report( 0.1 );
+	timeCollector.Stop("Load data");
+	progressReporter.Report(0.1);
 
-  timeCollector.Start( "Set parameters" );
+	timeCollector.Start("Set parameters");
 
-  PointType startPathPoint;
-  if( StartPoint.size() == 1 )
-    {
-    for( unsigned int i = 0; i < DimensionT; i++ )
-      {
-      startPathPoint[i]=StartPoint[0][i];
-      }
-   filter->SetStartPoint( startPathPoint );
-    }
-  else
-    {
-    tubeErrorMacro(
-      << "Error: Path must contain at only one Start Point" );
-    timeCollector.Stop( "Set parameters" );
-    return EXIT_FAILURE;
-    }
+	PointType startPathPoint;
+	if (StartPoint.size() == 1)
+	{
+		for (unsigned int i = 0; i < DimensionT; i++)
+		{
+			startPathPoint[i] = StartPoint[0][i];
+		}
+		SegmentTubesFilter->SetStartPoint(startPathPoint);
+	}
+	else
+	{
+		tubeErrorMacro(
+			<< "Error: Path must contain at only one Start Point");
+		timeCollector.Stop("Set parameters");
+		return EXIT_FAILURE;
+	}
 
-  if( IntermediatePoints.size() >= 1 )
-    {
-    std::vector< PointType > intermediatePathPoints;
-    for( unsigned int k = 0; k < IntermediatePoints.size(); k++ )
-      {
-      PointType pathPoint;
-      for( unsigned int i = 0; i < DimensionT; i++ )
-        {
-         pathPoint[i]=IntermediatePoints[k][i];
-        }
-      intermediatePathPoints.push_back( pathPoint );
-      }
-    filter->SetIntermediatePoints( intermediatePathPoints );
-    }
+	if (IntermediatePoints.size() >= 1)
+	{
+		std::vector< PointType > intermediatePathPoints;
+		for (unsigned int k = 0; k < IntermediatePoints.size(); k++)
+		{
+			PointType pathPoint;
+			for (unsigned int i = 0; i < DimensionT; i++)
+			{
+				pathPoint[i] = IntermediatePoints[k][i];
+			}
+			intermediatePathPoints.push_back(pathPoint);
+		}
+		SegmentTubesFilter->SetIntermediatePoints(intermediatePathPoints);
+	}
 
-  if( EndPoint.size() == 1 )
-    {
-    PointType targetPathPoint;
-    for( unsigned int i = 0; i < DimensionT; i++ )
-      {
-      targetPathPoint[i]=EndPoint[0][i];
-      }
-    filter->SetEndPoint( targetPathPoint );
-    }
-  else if ( TargetTubeFileName.empty() && EndPoint.size() == 0 )
-    {
-    tubeErrorMacro(
-      << "Error: Atmost one End/Target Point or Target"
-      "Tube should be provided. " );
-    timeCollector.Stop( "Set parameters" );
-    return EXIT_FAILURE;
-    }
+	if (EndPoint.size() == 1)
+	{
+		PointType targetPathPoint;
+		for (unsigned int i = 0; i < DimensionT; i++)
+		{
+			targetPathPoint[i] = EndPoint[0][i];
+		}
+		SegmentTubesFilter->SetEndPoint(targetPathPoint);
+	}
+	else if (TargetTubeFileName.empty() && EndPoint.size() == 0 )
+	{
+		tubeErrorMacro(<< "Error: Atmost one End/Target Point or Target Tube should be provided. ");
+		timeCollector.Stop("Set parameters");
+		return EXIT_FAILURE;
+	}
 
- filter->SetOptimizationMethod( Optimizer );
- filter->SetOptimizerTerminationValue( TerminationValue );
- filter->SetOptimizerNumberOfIterations( NumberOfIterations );
- filter->SetOptimizerStepLengthFactor( StepLengthFactor );
- filter->SetOptimizerStepLengthRelax( StepLengthRelax );
+	// set which direction vessel bends
+	if (!std::strcmp(bendInBranchVessel.c_str(), "NoBend"))
+	{
+		SegmentTubesFilter->SetNoBend(true);
+	}
 
-  timeCollector.Stop( "Set parameters" );
-  progressReporter.Report( 0.2 );
+	if (!std::strcmp(bendInBranchVessel.c_str(), "BendUpwards"))
+	{
+		SegmentTubesFilter->SetBendUpwards(true);
+	}
 
-  timeCollector.Start( "Extract minimal path" );
+	if (!std::strcmp(bendInBranchVessel.c_str(), "BendDownwards"))
+	{
+		SegmentTubesFilter->SetBendDownwards(true);
+	}
 
-  try
-    {
-    filter->Update();
-    }
-  catch( itk::ExceptionObject & err )
-    {
-    std::stringstream out;
-    out << "ExceptionObject caught !" << std::endl;
-    out << err << std::endl;
-    tube::ErrorMessage( out.str() );
-    timeCollector.Stop( "Extract minimal path" );
-    return EXIT_FAILURE;
-    }
-  timeCollector.Stop( "Extract minimal path" );
-  progressReporter.Report( 0.4 );
+	SegmentTubesFilter->SetOptimizationMethod(Optimizer);
+	SegmentTubesFilter->SetOptimizerTerminationValue(TerminationValue);
+	SegmentTubesFilter->SetOptimizerNumberOfIterations(NumberOfIterations);
+	SegmentTubesFilter->SetOptimizerStepLengthFactor(StepLengthFactor);
+	SegmentTubesFilter->SetOptimizerStepLengthRelax(StepLengthRelax);
 
-  timeCollector.Start( "Write output data" );
+	timeCollector.Stop("Set parameters");
+	progressReporter.Report(0.2);
 
-  // Write output TRE file
-  typedef itk::SpatialObjectWriter< DimensionT > TubeWriterType;
-  typename TubeWriterType::Pointer tubeWriter = TubeWriterType::New();
-  try
-    {
-    tubeWriter->SetFileName( OutputTREFile.c_str() );
-    tubeWriter->SetInput( filter->GetOutput() );
-    tubeWriter->Update();
-    }
-  catch( itk::ExceptionObject & err )
-    {
-    tube::ErrorMessage( "Error writing TRE file: "
-      + std::string( err.GetDescription() ) );
-    timeCollector.Stop( "Write output data" );
-    timeCollector.Report();
-    return EXIT_FAILURE;
-    }
+	timeCollector.Start("Extract minimal path");
 
-  timeCollector.Stop( "Write output data" );
-  progressReporter.Report( 1.0 );
+	try
+	{
+		SegmentTubesFilter->Update();
+	}
+	catch (itk::ExceptionObject & err)
+	{
+		std::stringstream out;
+		out << "ExceptionObject caught !" << std::endl;
+		out << err << std::endl;
+		tube::ErrorMessage(out.str());
+		timeCollector.Stop("Extract minimal path");
+		return EXIT_FAILURE;
+	}
+	timeCollector.Stop("Extract minimal path");
+	progressReporter.Report(0.4);
 
-  timeCollector.Report();
-  return EXIT_SUCCESS;
+	timeCollector.Start("Write output data");
+
+	// Write output TRE file
+	typedef itk::SpatialObjectWriter< DimensionT > TubeWriterType;
+	typename TubeWriterType::Pointer tubeWriter = TubeWriterType::New();
+	try
+	{
+		tubeWriter->SetFileName(OutputTREFile.c_str());
+		tubeWriter->SetInput(SegmentTubesFilter->GetOutput());
+		tubeWriter->Update();
+	}
+	catch (itk::ExceptionObject & err)
+	{
+		tube::ErrorMessage("Error writing TRE file: "
+			+ std::string(err.GetDescription()));
+		timeCollector.Stop("Write output data");
+		timeCollector.Report();
+		return EXIT_FAILURE;
+	}
+
+	timeCollector.Stop("Write output data");
+	progressReporter.Report(1.0);
+
+	timeCollector.Report();
+	return EXIT_SUCCESS;
 }
 
 // Main
-int main( int argc, char * argv[] )
+int main(int argc, char * argv[])
 {
-  PARSE_ARGS;
-  // You may need to update this line if, in the project's .xml CLI file,
-  //   you change the variable name for the inputImage.
-  return tube::ParseArgsAndCallDoIt( InputImage, argc, argv );
+	PARSE_ARGS;
+	// You may need to update this line if, in the project's .xml CLI file,
+	//   you change the variable name for the inputImage.
+	return tube::ParseArgsAndCallDoIt(InputImage, argc, argv);
 }

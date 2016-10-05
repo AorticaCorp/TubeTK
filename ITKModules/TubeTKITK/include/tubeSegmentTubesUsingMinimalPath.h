@@ -81,6 +81,11 @@ public:
   /* Set if the extract path connects to the surface of the target tube */
   tubeWrapSetMacro( ConnectToTargetTubeSurface, bool, Filter );
 
+  /* set if vessel bends upwards, downwards or does not bend*/
+  tubeWrapSetMacro( NoBend, bool, Filter );
+  tubeWrapSetMacro( BendUpwards, bool, Filter );
+  tubeWrapSetMacro( BendDownwards, bool, Filter );
+
   /* Set Optimization method parameters. */
   tubeWrapSetMacro( OptimizationMethod, std::string, Filter );
   tubeWrapSetMacro( OptimizerTerminationValue, double, Filter );
