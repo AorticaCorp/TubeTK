@@ -90,7 +90,7 @@
       <label>Start Radius</label>
       <description>Start Radius for radius estimation.</description>
       <longflag>startRadius</longflag>
-      <default>1</default>
+      <default>2</default>
     </double>
     <double>
       <name>MaxRadius</name>
@@ -104,7 +104,7 @@
       <label>Step Size</label>
       <description>Step size for radius estimation.</description>
       <longflag>stepRadius</longflag>
-      <default>0.05</default>
+      <default>0.5</default>
     </double>
   </parameters>
   <parameters advanced="true">
@@ -124,14 +124,14 @@
       <label>Termination Value</label>
       <description>Minimum value to reach before Optimizer is terminated</description>
       <longflag>terminationValue</longflag>
-      <default>2.0</default>
+      <default>0.5</default>
     </double>
     <integer>
       <name>NumberOfIterations</name>
       <label>Number of Iterations</label>
       <description>Maximum number of optimizer iterations. Only used with Gradient Descent and Regular Step Gradient Descent optimizers</description>
       <longflag>numberOfIterations</longflag>
-      <default>2000</default>
+      <default>10000</default>
     </integer>
     <double>
       <name>StepLengthFactor</name>
